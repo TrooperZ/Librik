@@ -1,56 +1,11 @@
 import {
-  Archive,
-  BookOpen,
   Bookmark,
-  Boxes,
-  CircleAlert,
-  Clock3,
-  Cloud,
-  FileText,
-  FolderGit2,
-  GraduationCap,
   Highlighter,
-  Library,
   NotebookTabs,
   PencilLine,
-  ScrollText,
-  Share2,
   Tag
 } from '@lucide/svelte';
-import type { BookRow, NoteCard, ReaderMark, SourceSection } from './types';
-
-export const sourceSections: SourceSection[] = [
-  {
-    label: 'Sources',
-    items: [
-      { label: 'All PDFs', icon: Library, count: '842', selected: true },
-      { label: 'Local Library', icon: Archive, count: '510' },
-      { label: 'GitHub Repos', icon: FolderGit2, count: '94' },
-      { label: 'Google Drive', icon: Cloud, count: '218' },
-      { label: 'Shared Collections', icon: Share2, count: '20' }
-    ]
-  },
-  {
-    label: 'Collections',
-    items: [
-      { label: 'Books', icon: BookOpen, count: '344' },
-      { label: 'Textbooks', icon: GraduationCap, count: '88' },
-      { label: 'Research Articles', icon: FileText, count: '273' },
-      { label: 'Course Packs', icon: Boxes, count: '31' },
-      { label: 'Manuals', icon: ScrollText, count: '106' },
-      { label: 'Reading Queue', icon: Bookmark, count: '17' }
-    ]
-  },
-  {
-    label: 'Smart',
-    items: [
-      { label: 'Recently Opened', icon: Clock3, count: '24' },
-      { label: 'Bookmarked', icon: Bookmark, count: '66' },
-      { label: 'Annotated', icon: Highlighter, count: '128' },
-      { label: 'Missing Files', icon: CircleAlert, count: '9' }
-    ]
-  }
-];
+import type { BookRow, NoteCard, ReaderMark } from './types';
 
 export const bookRows: BookRow[] = [
   {
@@ -59,8 +14,17 @@ export const bookRows: BookRow[] = [
     creator: 'Martin Kleppmann',
     type: 'Book',
     status: 'Reading',
-    source: 'Local',
+    source: 'Books',
     progress: '68%',
+    pages: 616,
+    fileSize: '14.8 MB',
+    filePath: '~/Library/LibrikVault/Books/designing-data-intensive-applications.pdf',
+    description: 'Reference text for distributed systems, replication, partitioning, transactions, batch processing, and stream processing.',
+    tags: ['distributed-systems', 'databases', 'architecture'],
+    addedAt: 'Jan 12, 2026',
+    modifiedAt: 'Jun 8, 2026',
+    fingerprint: 'sha256:8f4d...a92c',
+    currentPage: 128,
     accent: '#2663eb'
   },
   {
@@ -69,8 +33,17 @@ export const bookRows: BookRow[] = [
     creator: 'Hunt, Thomas',
     type: 'Book',
     status: 'Queued',
-    source: 'Drive',
+    source: 'Books',
     progress: '12%',
+    pages: 352,
+    fileSize: '9.2 MB',
+    filePath: '~/Library/LibrikVault/Books/the-pragmatic-programmer.pdf',
+    description: 'Software craft notes, engineering habits, debugging practices, and durable programming principles.',
+    tags: ['software-craft', 'career', 'practice'],
+    addedAt: 'Feb 4, 2026',
+    modifiedAt: 'May 25, 2026',
+    fingerprint: 'sha256:7bb1...e184',
+    currentPage: 42,
     accent: '#0f8a5f'
   },
   {
@@ -79,8 +52,17 @@ export const bookRows: BookRow[] = [
     creator: 'Brendan Gregg',
     type: 'Manual',
     status: 'Indexed',
-    source: 'Local',
+    source: 'Manuals',
     progress: '100%',
+    pages: 928,
+    fileSize: '38.4 MB',
+    filePath: '~/Library/LibrikVault/Manuals/systems-performance.pdf',
+    description: 'Operating system and application performance reference with tracing, CPU, memory, disk, and network analysis.',
+    tags: ['performance', 'systems', 'reference'],
+    addedAt: 'Mar 18, 2026',
+    modifiedAt: 'Jun 2, 2026',
+    fingerprint: 'sha256:11ac...09df',
+    currentPage: 928,
     accent: '#7c3aed'
   },
   {
@@ -89,8 +71,17 @@ export const bookRows: BookRow[] = [
     creator: 'Vaswani et al.',
     type: 'Paper',
     status: 'Annotated',
-    source: 'GitHub',
+    source: 'Research',
     progress: '100%',
+    pages: 15,
+    fileSize: '1.1 MB',
+    filePath: '~/Library/LibrikVault/Research/attention-is-all-you-need.pdf',
+    description: 'Transformer architecture paper covering attention mechanisms, encoder-decoder structure, and model training details.',
+    tags: ['ml', 'transformers', 'paper'],
+    addedAt: 'Apr 9, 2026',
+    modifiedAt: 'Jun 1, 2026',
+    fingerprint: 'sha256:dc29...78bd',
+    currentPage: 15,
     accent: '#c2410c'
   },
   {
@@ -99,8 +90,17 @@ export const bookRows: BookRow[] = [
     creator: 'Cooper, Torczon',
     type: 'Textbook',
     status: 'Missing file',
-    source: 'Shared',
+    source: 'Textbooks',
     progress: '41%',
+    pages: 824,
+    fileSize: '22.5 MB',
+    filePath: '~/Library/LibrikVault/Textbooks/engineering-a-compiler.pdf',
+    description: 'Compiler construction text covering scanning, parsing, semantic analysis, optimization, and code generation.',
+    tags: ['compilers', 'textbook', 'cs'],
+    addedAt: 'Apr 20, 2026',
+    modifiedAt: 'May 14, 2026',
+    fingerprint: 'sha256:31c0...ae44',
+    currentPage: 338,
     accent: '#b42318'
   },
   {
@@ -109,8 +109,17 @@ export const bookRows: BookRow[] = [
     creator: 'Course Pack',
     type: 'PDF Set',
     status: 'Syncing',
-    source: 'Drive',
+    source: 'Course Packs',
     progress: '83%',
+    pages: 244,
+    fileSize: '16.0 MB',
+    filePath: '~/Library/LibrikVault/Course Packs/distributed-systems-reading-pack.pdf',
+    description: 'Collected course readings on replication, consensus, storage engines, message queues, and fault tolerance.',
+    tags: ['course', 'distributed-systems', 'reading-pack'],
+    addedAt: 'May 2, 2026',
+    modifiedAt: 'Jun 10, 2026',
+    fingerprint: 'sha256:c642...0d21',
+    currentPage: 202,
     accent: '#475467'
   }
 ];

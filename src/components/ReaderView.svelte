@@ -1,13 +1,11 @@
 <script lang="ts">
   import { Bookmark, Highlighter, NotebookTabs, PencilLine, Tag } from '@lucide/svelte';
-  import type { AppAction, BookRow, NoteCard, ReaderMark } from '../lib/types';
-  import { noteCards } from '../lib/mockData';
+  import type { AppAction, BookRow, ReaderMark } from '../lib/types';
 
   export let book: BookRow;
   export let marks: ReaderMark[];
   export let onAction: (action: AppAction, detail?: string) => void;
 
-  const notes: NoteCard[] = noteCards;
   const lines = [390, 425, 408, 365, 430, 410, 380, 425, 402, 335, 430, 406, 375, 300];
   let selectedTool = 'Highlight';
 
@@ -89,23 +87,4 @@
       <span>Search idle</span>
     </div>
   </div>
-
-  <aside class="notes-panel" aria-label="Reader notes panel">
-    <header>
-      <h2>Notebook</h2>
-      <input placeholder="Search notes" aria-label="Search notes" onclick={() => onAction('Filter')} />
-    </header>
-
-    {#each notes as note}
-      <button type="button" class="note-card" onclick={() => onAction('Reader tool', note.title)}>
-        <strong>{note.title}</strong>
-        <span>{note.body}</span>
-      </button>
-    {/each}
-
-    <div class="note-actions">
-      <button type="button" onclick={() => onAction('Export notes')}>Export Notes</button>
-      <button type="button" onclick={() => onAction('Copy citation')}>Copy Citation</button>
-    </div>
-  </aside>
 </section>

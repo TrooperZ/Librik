@@ -1,4 +1,17 @@
-export type ViewMode = 'library' | 'reader';
+export type WorkspaceTab =
+  | {
+      id: 'library';
+      kind: 'library';
+      title: 'Library';
+      closable: false;
+    }
+  | {
+      id: string;
+      kind: 'reader';
+      title: string;
+      bookId: string;
+      closable: true;
+    };
 
 export type IconComponent = typeof import('@lucide/svelte').Icon;
 
@@ -16,18 +29,6 @@ export type AppAction =
   | 'Export notes'
   | 'Copy citation';
 
-export type SourceItem = {
-  label: string;
-  icon: IconComponent;
-  count?: string;
-  selected?: boolean;
-};
-
-export type SourceSection = {
-  label: string;
-  items: SourceItem[];
-};
-
 export type BookRow = {
   id: string;
   title: string;
@@ -36,6 +37,15 @@ export type BookRow = {
   status: string;
   source: string;
   progress: string;
+  pages: number;
+  fileSize: string;
+  filePath: string;
+  description: string;
+  tags: string[];
+  addedAt: string;
+  modifiedAt: string;
+  fingerprint: string;
+  currentPage: number;
   accent: string;
 };
 

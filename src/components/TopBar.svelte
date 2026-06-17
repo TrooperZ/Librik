@@ -8,14 +8,18 @@
 <header class="top-bar" aria-label="Application toolbar">
   <div class="brand-lockup">
     <strong>Librik</strong>
-    <button type="button" class="workspace-pill" onclick={() => onAction('Profile')}>My Library</button>
+    <nav class="app-menu" aria-label="Application menu">
+      <button type="button" onclick={() => onAction('Profile')}>File</button>
+      <button type="button" onclick={() => onAction('Filter')}>Edit</button>
+      <button type="button" onclick={() => onAction('List view')}>View</button>
+    </nav>
   </div>
 
   <label class="global-search">
     <Search size={15} />
     <input
       aria-label="Search books, PDFs, notes, annotations, and tags"
-      placeholder="Search books, PDFs, notes, annotations, tags"
+      placeholder="Search PDFs, tags, notes"
       onclick={() => onAction('Filter')}
     />
   </label>

@@ -1,6 +1,6 @@
 # Librik Codebase Explanation
 
-Librik is currently a Tauri v2 desktop app shell with a Svelte + TypeScript + Vite frontend. The visible UI is shaped as a real library and reader workspace: source navigation, dense library table, reader canvas, notebook panel, and compact app chrome.
+Librik is currently a Tauri v2 desktop app shell with a Svelte + TypeScript + Vite frontend. The visible UI is shaped as a VS Code/Obsidian-inspired PDF workspace: activity rail, explorer pane, editor tab group, dense library table, mocked reader canvas, persistent PDF details inspector, and compact app chrome.
 
 ## Top-Level Structure
 
@@ -18,10 +18,12 @@ Librik is currently a Tauri v2 desktop app shell with a Svelte + TypeScript + Vi
 │   ├── main.ts
 │   ├── vite-env.d.ts
 │   ├── components/
+│   │   ├── ActivityRail.svelte
 │   │   ├── LibraryView.svelte
+│   │   ├── PdfDetailsPanel.svelte
 │   │   ├── ReaderView.svelte
 │   │   ├── SourceSidebar.svelte
-│   │   ├── StatusBar.svelte
+│   │   ├── WorkspaceTabs.svelte
 │   │   └── TopBar.svelte
 │   └── lib/
 │       ├── mockData.ts
@@ -127,20 +129,26 @@ This file is the composition root for the desktop shell.
 The `<script>` block:
 
 - Imports the major shell components.
-- Imports OpenPencil-derived mock data for sources, books, and reader marks.
+- Imports OpenPencil-derived mock data for sources, books, reader marks, and notebook cards.
 - Tracks UI state:
-  - active workspace view: library or reader.
+  - active activity rail view.
+  - open workspace tabs.
+  - active workspace tab.
   - selected source.
   - selected book row.
+  - mutable mocked book rows.
+- Provides mocked behavior for importing a PDF, adding/removing tags, changing progress, and changing reading status.
 
 The markup defines the major application structure:
 
-- `TopBar`: app title, workspace pill, global search, import/sync/settings/profile controls.
-- `SourceSidebar`: source, collection, and smart filter navigation.
-- `.workspace`: tabbed library/reader area.
+- `TopBar`: app title, lightweight app menu, global search, import/sync/settings/profile controls.
+- `ActivityRail`: VS Code-style primary activity rail.
+- `SourceSidebar`: explorer pane with open editors and a Zotero/Mail/Obsidian/VS Code-style library tree.
+- `WorkspaceTabs`: editor-style tab strip for library and open PDFs.
+- `.workspace`: active library or reader surface.
 - `LibraryView`: dense table-management screen.
-- `ReaderView`: reader and annotation screen.
-- `StatusBar`: current source, visible item count, selected title, and ready state.
+- `ReaderView`: mocked reader screen.
+- `PdfDetailsPanel`: persistent side inspector for selected PDF preview, metadata, tags, progress, status, and notes.
 
 The handlers keep the shell interactive without surfacing implementation labels in the UI.
 
@@ -149,49 +157,91 @@ The handlers keep the shell interactive without surfacing implementation labels 
 Top application toolbar based on the OpenPencil mockup. It contains:
 
 - `Librik` wordmark.
-- `My Library` workspace pill.
+- lightweight File/Edit/View menu buttons.
 - Global search field.
 - Clickable icon buttons for import, sync, settings, and profile.
 
-The controls are active UI elements and keep the top bar feeling like an application toolbar.
+The import control is mocked through `App.svelte` and adds a local in-memory PDF row. The other controls are clickable UI shell commands.
+
+### `src/components/ActivityRail.svelte`
+
+Far-left activity rail inspired by VS Code.
+
+It renders icon-only buttons for:
+
+- Library.
+- Search.
+- Tags.
+- Recent.
+- Settings.
+
+Clicking an activity changes the highlighted rail item and updates the selected source context without replacing the active editor tab or launching to a blank page.
 
 ### `src/components/SourceSidebar.svelte`
 
-Left source navigation pane. It renders source sections from `sourceSections`:
+Activity-scoped side pane. It renders only the content for the selected activity:
 
-- Sources.
-- Collections.
-- Smart filters.
+- Library: a single `My Library` folder tree, nested collection folders, special buckets, and a new-folder icon next to the Library label.
+- Search: a compact search field with a filter button.
+- Tags: a tag search field, add-tag button, scrollable checkbox tag list, and mocked add-tag modal.
+- Recent: a compact list of recently opened files.
+- Settings: basic mocked workspace settings controls.
 
-Buttons update the selected source state in `App.svelte`.
+The folder tree is only rendered for the Library activity. Buttons update the selected vault view state in `App.svelte`.
+
+### `src/components/WorkspaceTabs.svelte`
+
+Editor-style workspace tab strip.
+
+It renders:
+
+- A permanent Library tab.
+- Open PDF tabs with document icons and close buttons.
+- A plus button that creates a mocked imported PDF and opens it as a new tab.
+
+Selecting a PDF tab makes that PDF the selected document and switches the workspace to the reader. Closing the active PDF tab falls back to the nearest remaining tab.
 
 ### `src/components/LibraryView.svelte`
 
-Dense library management view matching the OpenPencil direction:
+Dense library management view matching the OpenPencil direction while feeling closer to Obsidian/VS Code density:
 
-- Header and subtitle.
-- List/shelf/filter/sort controls.
+- Compact header and library count.
+- Import, folder, list, shelf, filter, and sort controls.
 - Table header.
-- Clickable book/PDF rows.
+- Clickable book/PDF rows with creator, type, tags, progress, source, and modified date.
 - Per-row `Read` and more-action controls.
 
-Selecting a row updates the active title. Opening the reader switches the app to the reader workspace.
+Selecting a row updates the active title and inspector. Opening the reader switches the app to the reader workspace.
+Opening a reader creates or focuses a PDF tab rather than using a single global reader tab.
+
+### `src/components/PdfDetailsPanel.svelte`
+
+Persistent right-side inspector for the selected PDF.
+
+It renders:
+
+- Selected PDF title and author.
+- Mocked cover/page preview.
+- Details, Tags, and Notes tabs.
+- Description, file path, metadata, current page, progress, file size, source, modified date, and fingerprint.
+- Editable mocked tags.
+- Suggested tag buttons.
+- Mocked progress controls.
+- Mocked reading status controls.
+- Notebook preview cards and export/citation actions.
+
+All behavior is in-memory UI state. It does not read files, parse PDFs, edit annotations, or persist data.
 
 ### `src/components/ReaderView.svelte`
 
-Reader and annotation shell based on the second OpenPencil screen:
+Reader shell based on the second OpenPencil screen:
 
 - Left rail for outline and quick marks.
 - Reader toolbar for highlight, note, bookmark, notebook, and tags.
 - PDF page surface with text lines, highlight area, bookmark ribbon, and margin note anchor.
 - Bottom page/zoom/search control strip.
-- Right notebook panel with notes, extracted quotes, reader tools, export notes, and copy citation actions.
 
-The reader is a UI shell for the reading workflow.
-
-### `src/components/StatusBar.svelte`
-
-Bottom status bar. It shows the current source, item count, selected title, and ready state.
+The reader is a UI shell for the reading workflow. It keeps mocked PDF visuals only and does not implement real PDF annotation behavior.
 
 ### `src/app.css`
 
@@ -199,12 +249,17 @@ This is the complete visual system for the shell. It uses a restrained neutral p
 
 Important layout rules:
 
-- `.app-shell` is a CSS grid with top app bar, source sidebar, workspace, and status bar.
-- `.source-sidebar` keeps library navigation compact and stable.
+- `.app-shell` is a CSS grid with top app bar, activity rail, explorer pane, workspace, and persistent PDF inspector.
+- `.activity-rail` provides VS Code-style primary navigation.
+- `.source-sidebar` keeps library navigation compact and stable as an explorer pane.
+- `.library-panel-header`, `.vault-tree`, `.tree-row`, `.tree-disclosure`, and `.tree-icon` render the nested Zotero-style library tree.
+- `.search-panel`, `.tags-panel`, `.tag-check-list`, `.recent-panel`, and `.mock-modal` style the mutually exclusive activity pane content.
+- `.workspace-tabs`, `.tab-strip`, `.tab-item`, and `.workspace-tab` provide the editor-style tab behavior and styling.
 - `.library-table` presents the management view as a dense table.
-- `.reader-view` splits outline, reader canvas, and notebook panels.
+- `.reader-view` splits outline and reader canvas while the persistent inspector handles details, tags, and notes.
+- `.pdf-inspector` provides the right side metadata/tag/notes panel.
 - `.pdf-page` provides the reader page surface.
-- The media query hides the inspector below `1120px`, preserving a usable desktop shell at narrower widths.
+- The media query tightens columns at narrower desktop widths.
 
 ## Frontend Bridge
 
@@ -212,10 +267,9 @@ Important layout rules:
 
 This file defines shared frontend TypeScript types:
 
-- `ViewMode` constrains the workspace to `library` or `reader`.
+- `WorkspaceTab` describes the permanent Library tab and closable PDF reader tabs.
 - `AppAction` enumerates shell-level clickable actions.
-- `SourceSection` and `SourceItem` describe the source sidebar.
-- `BookRow` describes the dense table data.
+- `BookRow` describes dense table and inspector data, including title, author, status, source, progress, file path, description, metadata, tags, fingerprint, and current page.
 - `ReaderMark` and `NoteCard` describe reader-side content.
 
 Keeping these types separate prevents UI markup from becoming the source of truth for app contracts.
@@ -224,8 +278,7 @@ Keeping these types separate prevents UI markup from becoming the source of trut
 
 OpenPencil-derived static shell data:
 
-- Source sections and counts.
-- Library table rows.
+- Library table rows with mocked metadata and tags.
 - Reader quick marks.
 - Notebook cards.
 
@@ -389,7 +442,7 @@ Verified locally:
 - `npm run build`
 - `npm run tauri build`
 - `npm run tauri dev` compiled and launched the native debug app
-- Browser-served Vite shell mounted and exposed the left rail, library pane, workspace, inspector, and status bar
+- Browser-served Vite shell mounted and exposed the left rail, library pane, workspace, and inspector
 
 Current build output:
 
