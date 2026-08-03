@@ -72,7 +72,7 @@
                     <strong>{book.progress}</strong>
                     <span><i style={`width:${book.progress}`}></i></span>
                 </span>
-                <span>{book.source}</span>
+                <span>{book.source || "Unfiled"}</span>
                 <span>{book.modifiedAt}</span>
                 <span class="row-actions">
                     <button

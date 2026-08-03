@@ -9,16 +9,18 @@
     import SourceSidebar from "./components/SourceSidebar.svelte";
     import TopBar from "./components/TopBar.svelte";
     import WorkspaceTabs from "./components/WorkspaceTabs.svelte";
-    import type { BookRow, WorkspaceTab } from "./lib/types";
+    import type { BookRow, FolderRow, WorkspaceTab } from "./lib/types";
 
     const desktop = isTauri();
     let selectedBookId = "";
     let activeActivity: ActivityView = "library";
     let selectedFilter = "all";
     let selectedTag = "";
+    let selectedFolder = "";
     let searchQuery = "";
     let theme: "light" | "dark" = "light";
     let books: BookRow[] = [];
+    let folders: FolderRow[] = [];
     let workspaceTabs: WorkspaceTab[] = [
         { id: "library", kind: "library", title: "Library", closable: false },
     ];
@@ -35,14 +37,17 @@
                 .toLowerCase()
                 .includes(normalizedQuery);
         const matchesTag = !selectedTag || book.tags.includes(selectedTag);
+        const matchesFolder = !selectedFolder || book.folderId === selectedFolder;
         const matchesFilter =
             selectedFilter === "all" ||
             (selectedFilter === "missing"
                 ? book.status === "Missing file"
                 : book.status.toLowerCase() === selectedFilter);
-        return matchesSearch && matchesTag && matchesFilter;
+        return matchesSearch && matchesTag && matchesFolder && matchesFilter;
     });
-    $: libraryTitle = selectedTag
+    $: libraryTitle = selectedFolder
+        ? (folders.find((folder) => folder.id === selectedFolder)?.name ?? "Folder")
+        : selectedTag
         ? `Tag: ${selectedTag}`
         : searchQuery.trim()
           ? `Search: ${searchQuery.trim()}`
@@ -61,7 +66,7 @@
                 : window.matchMedia("(prefers-color-scheme: dark)").matches
                   ? "dark"
                   : "light";
-        if (desktop) void loadBooks();
+        if (desktop) void loadLibrary();
     });
 
     function toggleTheme() {
@@ -69,9 +74,12 @@
         window.localStorage.setItem("librik-theme", theme);
     }
 
-    async function loadBooks() {
+    async function loadLibrary() {
         try {
-            books = await invoke<BookRow[]>("list_books");
+            [books, folders] = await Promise.all([
+                invoke<BookRow[]>("list_books"),
+                invoke<FolderRow[]>("list_folders"),
+            ]);
             selectedBookId = books[0]?.id ?? "";
         } catch (error) {
             showError("Could not load the library", error);
@@ -87,6 +95,7 @@
             const book = await invoke<BookRow | null>("import_pdf");
             if (!book) return;
             books = [book, ...books.filter((item) => item.id !== book.id)];
+            folders = await invoke<FolderRow[]>("list_folders");
             selectedBookId = book.id;
             openReaderTab(book.id);
         } catch (error) {
@@ -155,13 +164,106 @@
     function handleFilter(filter: string) {
         selectedFilter = filter;
         selectedTag = "";
+        selectedFolder = "";
         showLibrary();
     }
 
     function handleTag(tag: string) {
         selectedTag = tag;
         selectedFilter = "all";
+        selectedFolder = "";
         showLibrary();
+    }
+
+    function handleFolder(folder: string) {
+        selectedFolder = selectedFolder === folder ? "" : folder;
+        selectedFilter = selectedFolder ? "" : "all";
+        selectedTag = "";
+        showLibrary();
+    }
+
+    async function createFolder(name: string, parentId: string | null) {
+        if (!desktop) return null;
+        try {
+            const folder = await invoke<FolderRow>("create_folder", {
+                name,
+                parentId,
+            });
+            folders = [...folders, folder].sort((left, right) =>
+                left.name.localeCompare(right.name),
+            );
+            handleFolder(folder.id);
+            return folder;
+        } catch (error) {
+            showError("Could not create the folder", error);
+            return null;
+        }
+    }
+
+    async function renameFolder(id: string, name: string) {
+        if (!desktop) return false;
+        try {
+            await invoke("rename_folder", { id, name });
+            folders = folders.map((folder) =>
+                folder.id === id ? { ...folder, name } : folder,
+            );
+            books = books.map((book) =>
+                book.folderId === id ? { ...book, source: name } : book,
+            );
+            return true;
+        } catch (error) {
+            showError("Could not rename the folder", error);
+            return false;
+        }
+    }
+
+    async function moveFolder(
+        id: string,
+        parentId: string | null,
+        beforeId: string | null,
+    ) {
+        if (!desktop) return false;
+        try {
+            await invoke("move_folder", { id, parentId, beforeId });
+            folders = await invoke<FolderRow[]>("list_folders");
+            return true;
+        } catch (error) {
+            showError("Could not move the folder", error);
+            return false;
+        }
+    }
+
+    async function deleteFolder(id: string) {
+        if (!desktop) return false;
+        try {
+            await invoke("delete_folder", { id });
+            [books, folders] = await Promise.all([
+                invoke<BookRow[]>("list_books"),
+                invoke<FolderRow[]>("list_folders"),
+            ]);
+            if (!folders.some((folder) => folder.id === selectedFolder)) {
+                selectedFolder = "";
+                selectedFilter = "all";
+            }
+            return true;
+        } catch (error) {
+            showError("Could not delete the folder", error);
+            return false;
+        }
+    }
+
+    async function setFolderColor(id: string, color: string | null) {
+        if (!desktop) return false;
+        try {
+            await invoke("set_folder_color", { id, color });
+            folders = folders.map((folder) =>
+                folder.id === id ? { ...folder, color } : folder,
+            );
+            return true;
+        } catch (error) {
+            showError("Could not color the folder", error);
+            return false;
+        }
     }
 
     function handleSearch(query: string) {
@@ -227,6 +329,20 @@
     function handleSetStatus(bookId: string, status: string) {
         updateBook(bookId, (book) => ({ ...book, status }));
     }
+
+    async function handleSetFolder(bookId: string, folderId: string) {
+        if (!desktop) return;
+        try {
+            const updated = await invoke<BookRow>("set_document_folder", {
+                id: bookId,
+                folderId: folderId || null,
+            });
+            books = books.map((book) => (book.id === bookId ? updated : book));
+            folders = await invoke<FolderRow[]>("list_folders");
+        } catch (error) {
+            showError("Could not move the PDF", error);
+        }
+    }
 </script>
 
 <main class="app-shell" aria-label="Librik">
@@ -241,13 +357,21 @@
     <ActivityRail activeView={activeActivity} onSelect={handleActivitySelect} />
     <SourceSidebar
         {books}
+        {folders}
         {activeActivity}
         {selectedFilter}
         {selectedTag}
+        {selectedFolder}
         {searchQuery}
         onFilter={handleFilter}
         onSearch={handleSearch}
         onTag={handleTag}
+        onFolder={handleFolder}
+        onCreateFolder={createFolder}
+        onRenameFolder={renameFolder}
+        onMoveFolder={moveFolder}
+        onDeleteFolder={deleteFolder}
+        onSetFolderColor={setFolderColor}
         onOpenBook={openReaderTab}
     />
 
@@ -277,11 +401,13 @@
     {#if selectedBook}
         <PdfDetailsPanel
             book={selectedBook}
+            {folders}
             onOpenReader={openReaderTab}
             onAddTag={handleAddTag}
             onRemoveTag={handleRemoveTag}
             onSetProgress={handleSetProgress}
             onSetStatus={handleSetStatus}
+            onSetFolder={handleSetFolder}
         />
     {:else}
         <aside class="pdf-inspector empty-inspector" aria-label="No PDF selected">

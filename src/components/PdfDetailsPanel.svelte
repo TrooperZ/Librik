@@ -1,18 +1,34 @@
 <script lang="ts">
     import { BookOpen, Tag, X } from "@lucide/svelte";
-    import type { BookRow } from "../lib/types";
+    import type { BookRow, FolderRow } from "../lib/types";
 
     export let book: BookRow;
+    export let folders: FolderRow[];
     export let onOpenReader: (bookId: string) => void;
     export let onAddTag: (bookId: string, tag: string) => void;
     export let onRemoveTag: (bookId: string, tag: string) => void;
     export let onSetProgress: (bookId: string, progress: string) => void;
     export let onSetStatus: (bookId: string, status: string) => void;
+    export let onSetFolder: (bookId: string, folder: string) => void;
 
     let activeTab: "details" | "tags" = "details";
     let tagDraft = "";
     const progressStops = ["25%", "50%", "75%", "100%"];
     const statuses = ["Reading", "Queued", "Finished", "Archived"];
+    $: folderOptions = flattenFolders(folders, null);
+
+    function flattenFolders(allFolders: FolderRow[], parentId: string | null, depth = 0): Array<{ folder: FolderRow; depth: number }> {
+        return allFolders
+            .filter((folder) => folder.parentId === parentId)
+            .sort(
+                (left, right) =>
+                    left.sortOrder - right.sortOrder || left.name.localeCompare(right.name),
+            )
+            .flatMap((folder) => [
+                { folder, depth },
+                ...flattenFolders(allFolders, folder.id, depth + 1),
+            ]);
+    }
 
     function addDraftTag() {
         const tag = tagDraft.trim();
@@ -56,7 +72,17 @@
                 <div><dt>Progress</dt><dd>{book.progress} · p. {book.currentPage}</dd></div>
                 <div><dt>Pages</dt><dd>{book.pages}</dd></div>
                 <div><dt>Size</dt><dd>{book.fileSize}</dd></div>
-                <div><dt>Folder</dt><dd>{book.source}</dd></div>
+                <div>
+                    <dt>Folder</dt>
+                    <dd>
+                        <select aria-label="Document folder" value={book.folderId ?? ""} onchange={(event) => onSetFolder(book.id, event.currentTarget.value)}>
+                            <option value="">No folder</option>
+                            {#each folderOptions as { folder, depth }}
+                                <option value={folder.id}>{`${"— ".repeat(depth)}${folder.name}`}</option>
+                            {/each}
+                        </select>
+                    </dd>
+                </div>
                 <div><dt>Modified</dt><dd>{book.modifiedAt}</dd></div>
             </dl>
             <label class="path-field"><span>File path</span><input readonly value={book.filePath} /></label>

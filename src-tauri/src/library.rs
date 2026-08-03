@@ -9,6 +9,7 @@ pub struct Document {
     pub doc_type: String,
     pub status: String,
     pub source: String,
+    pub folder_id: Option<String>,
     pub progress_percent: u8,
     pub pages: u32,
     pub file_size_bytes: u64,
@@ -33,6 +34,7 @@ pub struct BookRow {
     pub doc_type: String,
     pub status: String,
     pub source: String,
+    pub folder_id: Option<String>,
     pub progress: String,
     pub pages: u32,
     pub file_size: String,
@@ -46,6 +48,17 @@ pub struct BookRow {
     pub accent: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FolderRow {
+    pub id: String,
+    pub name: String,
+    pub parent_id: Option<String>,
+    pub color: Option<String>,
+    pub sort_order: u32,
+    pub document_count: u32,
+}
+
 impl From<Document> for BookRow {
     fn from(document: Document) -> Self {
         Self {
@@ -55,6 +68,7 @@ impl From<Document> for BookRow {
             doc_type: document.doc_type,
             status: document.status,
             source: document.source,
+            folder_id: document.folder_id,
             progress: format!("{}%", document.progress_percent),
             pages: document.pages,
             file_size: format_size(document.file_size_bytes),

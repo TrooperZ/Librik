@@ -16,6 +16,13 @@ pub fn run() {
             commands::list_books,
             commands::import_pdf,
             commands::save_reading_state,
+            commands::list_folders,
+            commands::create_folder,
+            commands::rename_folder,
+            commands::move_folder,
+            commands::delete_folder,
+            commands::set_folder_color,
+            commands::set_document_folder,
         ])
         .run(tauri::generate_context!())
         .expect("failed to run Librik desktop shell");

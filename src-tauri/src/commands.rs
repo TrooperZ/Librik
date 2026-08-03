@@ -6,7 +6,7 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::{
     database,
-    library::{BookRow, ReadingState},
+    library::{BookRow, FolderRow, ReadingState},
     pdf, storage,
 };
 
@@ -76,4 +76,58 @@ pub async fn import_pdf(app: AppHandle) -> Result<Option<BookRow>, String> {
 #[tauri::command]
 pub fn save_reading_state(app: AppHandle, state: ReadingState) -> Result<(), String> {
     database::save_reading_state(&database::open(&app)?, &state)
+}
+
+#[tauri::command]
+pub fn list_folders(app: AppHandle) -> Result<Vec<FolderRow>, String> {
+    database::list_folders(&database::open(&app)?)
+}
+
+#[tauri::command]
+pub fn create_folder(
+    app: AppHandle,
+    name: String,
+    parent_id: Option<String>,
+) -> Result<FolderRow, String> {
+    database::create_folder(&database::open(&app)?, &name, parent_id.as_deref())
+}
+
+#[tauri::command]
+pub fn rename_folder(app: AppHandle, id: String, name: String) -> Result<(), String> {
+    database::rename_folder(&database::open(&app)?, &id, &name)
+}
+
+#[tauri::command]
+pub fn move_folder(
+    app: AppHandle,
+    id: String,
+    parent_id: Option<String>,
+    before_id: Option<String>,
+) -> Result<(), String> {
+    database::move_folder(
+        &mut database::open(&app)?,
+        &id,
+        parent_id.as_deref(),
+        before_id.as_deref(),
+    )
+}
+
+#[tauri::command]
+pub fn delete_folder(app: AppHandle, id: String) -> Result<(), String> {
+    database::delete_folder(&mut database::open(&app)?, &id)
+}
+
+#[tauri::command]
+pub fn set_folder_color(app: AppHandle, id: String, color: Option<String>) -> Result<(), String> {
+    database::set_folder_color(&database::open(&app)?, &id, color.as_deref())
+}
+
+#[tauri::command]
+pub fn set_document_folder(
+    app: AppHandle,
+    id: String,
+    folder_id: Option<String>,
+) -> Result<BookRow, String> {
+    database::set_document_folder(&database::open(&app)?, &id, folder_id.as_deref())
+        .map(BookRow::from)
 }

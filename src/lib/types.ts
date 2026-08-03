@@ -20,6 +20,7 @@ export type BookRow = {
   type: string;
   status: string;
   source: string;
+  folderId: string | null;
   progress: string;
   pages: number;
   fileSize: string;
@@ -31,4 +32,13 @@ export type BookRow = {
   fingerprint: string;
   currentPage: number;
   accent: string;
+};
+
+export type FolderRow = {
+  id: string;
+  name: string;
+  parentId: string | null;
+  color: string | null;
+  sortOrder: number;
+  documentCount: number;
 };
