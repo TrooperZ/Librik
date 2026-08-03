@@ -1,76 +1,31 @@
 <script lang="ts">
-    import {
-        Download,
-        Filter,
-        Grid2X2,
-        List,
-        MoreHorizontal,
-        Plus,
-    } from "@lucide/svelte";
-    import type { AppAction, BookRow } from "../lib/types";
+    import { Download } from "@lucide/svelte";
+    import type { BookRow } from "../lib/types";
 
+    export let title: string;
     export let books: BookRow[];
     export let selectedBookId: string;
     export let onSelectBook: (bookId: string) => void;
     export let onOpenReader: (bookId: string) => void;
-    export let onAction: (action: AppAction, detail?: string) => void;
+    export let onImport: () => void;
 </script>
 
 <section class="library-view" aria-label="Library management view">
     <header class="view-heading">
         <div>
-            <h1>All PDFs</h1>
-            <p>{books.length} PDFs</p>
+            <h1>{title}</h1>
+            <p>{books.length} {books.length === 1 ? "PDF" : "PDFs"}</p>
         </div>
 
-        <div class="view-actions" aria-label="Library view controls">
-            <button
-                type="button"
-                title="Import PDF"
-                onclick={() => onAction("Import PDF")}
-            >
+        <div class="view-actions" aria-label="Library actions">
+            <button type="button" title="Import PDF" onclick={onImport}>
                 <Download size={16} />
+                Import
             </button>
-            <button
-                type="button"
-                class="text-command"
-                title="Add Folder"
-                onclick={() => onAction("Filter", "Add Folder")}
-            >
-                <Plus size={15} />
-                Folder
-            </button>
-            <button
-                type="button"
-                class="selected"
-                title="List view"
-                onclick={() => onAction("List view")}
-            >
-                <List size={16} />
-            </button>
-            <button
-                type="button"
-                title="Shelf view"
-                onclick={() => onAction("Shelf view")}
-            >
-                <Grid2X2 size={16} />
-            </button>
-            <button
-                type="button"
-                title="Filter"
-                onclick={() => onAction("Filter")}
-            >
-                <Filter size={16} />
-            </button>
-            <button
-                type="button"
-                class="sort-button"
-                onclick={() => onAction("Sort")}>Sort: Recent</button
-            >
         </div>
     </header>
 
-    <div class="library-table" role="table" aria-label="Books and PDFs">
+    <div class="library-table" role="table" aria-label="PDF library">
         <div class="table-header" role="row">
             <span>Cover</span>
             <span>Title</span>
@@ -80,6 +35,13 @@
             <span>Modified</span>
             <span></span>
         </div>
+
+        {#if books.length === 0}
+            <div class="library-empty">
+                <strong>No matching PDFs</strong>
+                <span>Import a PDF or clear the current filter.</span>
+            </div>
+        {/if}
 
         {#each books as book}
             <div
@@ -96,8 +58,7 @@
                 }}
                 ondblclick={() => onOpenReader(book.id)}
             >
-                <span class="cover-chip" style={`--accent:${book.accent}`}
-                ></span>
+                <span class="cover-chip" style={`--accent:${book.accent}`}></span>
                 <span class="title-cell">
                     <strong>{book.title}</strong>
                     <small>{book.creator} · {book.type}</small>
@@ -116,25 +77,12 @@
                 <span class="row-actions">
                     <button
                         type="button"
-                        title="Open reader"
+                        title={`Read ${book.title}`}
                         onclick={(event) => {
                             event.stopPropagation();
                             onOpenReader(book.id);
                         }}
-                    >
-                        Read
-                    </button>
-                    <button
-                        type="button"
-                        title="More actions"
-                        aria-label={`More actions for ${book.title}`}
-                        onclick={(event) => {
-                            event.stopPropagation();
-                            onAction("Open reader", book.title);
-                        }}
-                    >
-                        <MoreHorizontal size={15} />
-                    </button>
+                    >Read</button>
                 </span>
             </div>
         {/each}

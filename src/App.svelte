@@ -1,4 +1,6 @@
 <script lang="ts">
+    import { invoke, isTauri } from "@tauri-apps/api/core";
+    import { onMount } from "svelte";
     import ActivityRail from "./components/ActivityRail.svelte";
     import type { ActivityView } from "./components/ActivityRail.svelte";
     import LibraryView from "./components/LibraryView.svelte";
@@ -7,176 +9,191 @@
     import SourceSidebar from "./components/SourceSidebar.svelte";
     import TopBar from "./components/TopBar.svelte";
     import WorkspaceTabs from "./components/WorkspaceTabs.svelte";
-    import { bookRows, noteCards, readerMarks } from "./lib/mockData";
-    import type { AppAction, BookRow, WorkspaceTab } from "./lib/types";
+    import type { BookRow, WorkspaceTab } from "./lib/types";
 
-    let selectedSource = "All PDFs";
-    let selectedBookId = bookRows[0].id;
+    const desktop = isTauri();
+    let selectedBookId = "";
     let activeActivity: ActivityView = "library";
-    let books: BookRow[] = bookRows;
+    let selectedFilter = "all";
+    let selectedTag = "";
+    let searchQuery = "";
+    let theme: "light" | "dark" = "light";
+    let books: BookRow[] = [];
     let workspaceTabs: WorkspaceTab[] = [
         { id: "library", kind: "library", title: "Library", closable: false },
-        {
-            id: `reader:${bookRows[0].id}`,
-            kind: "reader",
-            title: bookRows[0].title,
-            bookId: bookRows[0].id,
-            closable: true,
-        },
-        {
-            id: `reader:${bookRows[3].id}`,
-            kind: "reader",
-            title: bookRows[3].title,
-            bookId: bookRows[3].id,
-            closable: true,
-        },
     ];
     let activeTabId = "library";
 
-    $: selectedBook =
-        books.find((book) => book.id === selectedBookId) ?? books[0];
-    $: activeTab =
-        workspaceTabs.find((tab) => tab.id === activeTabId) ?? workspaceTabs[0];
-
-    function createMockBook(): BookRow {
-        const number =
-            books.filter((book) => book.id.startsWith("mock-import")).length +
-            1;
-        return {
-            id: `mock-import-${number}`,
-            title: `Imported PDF ${number}`,
-            creator: "Unknown Author",
-            type: "PDF",
-            status: "Queued",
-            source: "Inbox",
-            progress: "0%",
-            pages: 186,
-            fileSize: "6.4 MB",
-            filePath: `~/Library/LibrikVault/Inbox/imported-pdf-${number}.pdf`,
-            description:
-                "Newly added PDF awaiting review, tagging, and reading progress.",
-            tags: ["inbox"],
-            addedAt: "Today",
-            modifiedAt: "Today",
-            fingerprint: `sha256:mock...${String(number).padStart(4, "0")}`,
-            currentPage: 1,
-            accent: "#2563eb",
-        };
+    $: selectedBook = books.find((book) => book.id === selectedBookId) ?? books[0];
+    $: activeTab = workspaceTabs.find((tab) => tab.id === activeTabId) ?? workspaceTabs[0];
+    $: normalizedQuery = searchQuery.trim().toLowerCase();
+    $: filteredBooks = books.filter((book) => {
+        const matchesSearch =
+            !normalizedQuery ||
+            [book.title, book.creator, book.description, ...book.tags]
+                .join(" ")
+                .toLowerCase()
+                .includes(normalizedQuery);
+        const matchesTag = !selectedTag || book.tags.includes(selectedTag);
+        const matchesFilter =
+            selectedFilter === "all" ||
+            (selectedFilter === "missing"
+                ? book.status === "Missing file"
+                : book.status.toLowerCase() === selectedFilter);
+        return matchesSearch && matchesTag && matchesFilter;
+    });
+    $: libraryTitle = selectedTag
+        ? `Tag: ${selectedTag}`
+        : searchQuery.trim()
+          ? `Search: ${searchQuery.trim()}`
+          : selectedFilter === "all"
+            ? "Library"
+            : selectedFilter[0].toUpperCase() + selectedFilter.slice(1);
+    $: if (typeof document !== "undefined") {
+        document.documentElement.dataset.theme = theme;
     }
 
-    function handleAction(action: AppAction, _detail?: string) {
-        if (action === "Import PDF") {
-            const book = createMockBook();
-            books = [book, ...books];
-            selectedBookId = book.id;
-            openReaderTab(book.id);
+    onMount(() => {
+        const savedTheme = window.localStorage.getItem("librik-theme");
+        theme =
+            savedTheme === "light" || savedTheme === "dark"
+                ? savedTheme
+                : window.matchMedia("(prefers-color-scheme: dark)").matches
+                  ? "dark"
+                  : "light";
+        if (desktop) void loadBooks();
+    });
+
+    function toggleTheme() {
+        theme = theme === "light" ? "dark" : "light";
+        window.localStorage.setItem("librik-theme", theme);
+    }
+
+    async function loadBooks() {
+        try {
+            books = await invoke<BookRow[]>("list_books");
+            selectedBookId = books[0]?.id ?? "";
+        } catch (error) {
+            showError("Could not load the library", error);
         }
     }
 
-    function makeReaderTab(book: BookRow): WorkspaceTab {
-        return {
-            id: `reader:${book.id}`,
-            kind: "reader",
-            title: book.title,
-            bookId: book.id,
-            closable: true,
-        };
+    async function importPdf() {
+        if (!desktop) {
+            window.alert("PDF import requires the desktop app. Run: npm run tauri dev");
+            return;
+        }
+        try {
+            const book = await invoke<BookRow | null>("import_pdf");
+            if (!book) return;
+            books = [book, ...books.filter((item) => item.id !== book.id)];
+            selectedBookId = book.id;
+            openReaderTab(book.id);
+        } catch (error) {
+            showError("Could not import the PDF", error);
+        }
+    }
+
+    function showError(message: string, error: unknown) {
+        window.alert(`${message}: ${String(error)}`);
     }
 
     function openReaderTab(bookId: string) {
         const book = books.find((item) => item.id === bookId);
         if (!book) return;
-
         const tabId = `reader:${bookId}`;
         if (!workspaceTabs.some((tab) => tab.id === tabId)) {
-            workspaceTabs = [...workspaceTabs, makeReaderTab(book)];
+            workspaceTabs = [
+                ...workspaceTabs,
+                { id: tabId, kind: "reader", title: book.title, bookId, closable: true },
+            ];
         }
-
         selectedBookId = bookId;
         activeTabId = tabId;
+    }
+
+    function showLibrary() {
+        activeTabId = "library";
     }
 
     function handleSelectTab(tabId: string) {
         const tab = workspaceTabs.find((item) => item.id === tabId);
         if (!tab) return;
-
         activeTabId = tab.id;
-        if (tab.kind === "reader") {
-            selectedBookId = tab.bookId;
-        }
+        if (tab.kind === "reader") selectedBookId = tab.bookId;
     }
 
     function handleCloseTab(tabId: string) {
         const tabIndex = workspaceTabs.findIndex((tab) => tab.id === tabId);
         const tab = workspaceTabs[tabIndex];
         if (!tab || !tab.closable) return;
-
         const nextTabs = workspaceTabs.filter((item) => item.id !== tabId);
         workspaceTabs = nextTabs;
-
         if (activeTabId !== tabId) return;
-
         const nextTab = nextTabs[Math.max(0, tabIndex - 1)] ?? nextTabs[0];
         activeTabId = nextTab.id;
-        if (nextTab.kind === "reader") {
-            selectedBookId = nextTab.bookId;
-        }
+        if (nextTab.kind === "reader") selectedBookId = nextTab.bookId;
     }
 
     function handleReorderTabs(fromTabId: string, toTabId: string) {
         if (fromTabId === toTabId) return;
-
         const fromIndex = workspaceTabs.findIndex((tab) => tab.id === fromTabId);
         const toIndex = workspaceTabs.findIndex((tab) => tab.id === toTabId);
         if (fromIndex === -1 || toIndex === -1) return;
-        if (
-            workspaceTabs[fromIndex].kind === "library" ||
-            workspaceTabs[toIndex].kind === "library"
-        )
-            return;
-
+        if (workspaceTabs[fromIndex].kind === "library" || workspaceTabs[toIndex].kind === "library") return;
         const nextTabs = [...workspaceTabs];
         const [movedTab] = nextTabs.splice(fromIndex, 1);
         nextTabs.splice(toIndex, 0, movedTab);
         workspaceTabs = nextTabs;
     }
 
-    function handleSourceSelect(source: string) {
-        selectedSource = source;
-    }
-
     function handleActivitySelect(view: ActivityView) {
         activeActivity = view;
-        if (view === "library") selectedSource = "All PDFs";
-        if (view === "search") selectedSource = "Tag filter";
-        if (view === "tags") selectedSource = "Annotated";
-        if (view === "recent") selectedSource = "Recently Opened";
-        if (view === "settings") selectedSource = "Vault settings";
+        showLibrary();
     }
 
-    function handleBookSelect(bookId: string) {
-        selectedBookId = bookId;
+    function handleFilter(filter: string) {
+        selectedFilter = filter;
+        selectedTag = "";
+        showLibrary();
     }
 
-    function handleOpenReader(bookId: string) {
-        openReaderTab(bookId);
-        handleAction("Open reader");
+    function handleTag(tag: string) {
+        selectedTag = tag;
+        selectedFilter = "all";
+        showLibrary();
+    }
+
+    function handleSearch(query: string) {
+        searchQuery = query;
+        showLibrary();
     }
 
     function updateBook(bookId: string, update: (book: BookRow) => BookRow) {
         books = books.map((book) => (book.id === bookId ? update(book) : book));
-        workspaceTabs = workspaceTabs.map((tab) => {
-            if (tab.kind !== "reader" || tab.bookId !== bookId) return tab;
-            const book = books.find((item) => item.id === bookId);
-            return book ? { ...tab, title: book.title } : tab;
-        });
+        const updatedBook = books.find((book) => book.id === bookId);
+        workspaceTabs = workspaceTabs.map((tab) =>
+            tab.kind === "reader" && tab.bookId === bookId && updatedBook
+                ? { ...tab, title: updatedBook.title }
+                : tab,
+        );
+        if (updatedBook && desktop) {
+            void invoke("save_reading_state", {
+                state: {
+                    id: updatedBook.id,
+                    status: updatedBook.status,
+                    progress: updatedBook.progress,
+                    tags: updatedBook.tags,
+                    currentPage: updatedBook.currentPage,
+                },
+            }).catch((error) => showError("Could not save reading progress", error));
+        }
     }
 
     function handleAddTag(bookId: string, tag: string) {
-        updateBook(bookId, (book) => {
-            if (book.tags.includes(tag)) return book;
-            return { ...book, tags: [...book.tags, tag] };
-        });
+        updateBook(bookId, (book) =>
+            book.tags.includes(tag) ? book : { ...book, tags: [...book.tags, tag] },
+        );
     }
 
     function handleRemoveTag(bookId: string, tag: string) {
@@ -190,12 +207,21 @@
         updateBook(bookId, (book) => ({
             ...book,
             progress,
-            currentPage: Math.max(
-                1,
-                Math.round((Number.parseInt(progress) / 100) * book.pages),
-            ),
-            status: progress === "100%" ? "Annotated" : "Reading",
+            currentPage: Math.max(1, Math.round((Number.parseInt(progress) / 100) * book.pages)),
+            status: progress === "100%" ? "Finished" : "Reading",
         }));
+    }
+
+    function handlePageChange(bookId: string, page: number) {
+        updateBook(bookId, (book) => {
+            const percent = Math.min(100, Math.round((page / Math.max(book.pages, 1)) * 100));
+            return {
+                ...book,
+                currentPage: page,
+                progress: `${percent}%`,
+                status: page >= book.pages ? "Finished" : "Reading",
+            };
+        });
     }
 
     function handleSetStatus(bookId: string, status: string) {
@@ -204,15 +230,25 @@
 </script>
 
 <main class="app-shell" aria-label="Librik">
-    <TopBar onAction={handleAction} />
-
+    <TopBar
+        {searchQuery}
+        {theme}
+        onSearch={handleSearch}
+        onImport={importPdf}
+        onSettings={() => handleActivitySelect("settings")}
+        onToggleTheme={toggleTheme}
+    />
     <ActivityRail activeView={activeActivity} onSelect={handleActivitySelect} />
-
     <SourceSidebar
-        {selectedSource}
-        vaultCount={String(books.length)}
+        {books}
         {activeActivity}
-        onSelect={handleSourceSelect}
+        {selectedFilter}
+        {selectedTag}
+        {searchQuery}
+        onFilter={handleFilter}
+        onSearch={handleSearch}
+        onTag={handleTag}
+        onOpenBook={openReaderTab}
     />
 
     <section class="workspace" aria-label="Primary workspace">
@@ -221,35 +257,37 @@
             {activeTabId}
             onSelect={handleSelectTab}
             onClose={handleCloseTab}
-            onNew={() => handleAction("Import PDF")}
+            onNew={importPdf}
             onReorder={handleReorderTabs}
         />
-
         {#if activeTab.kind === "library"}
             <LibraryView
-                {books}
+                title={libraryTitle}
+                books={filteredBooks}
                 {selectedBookId}
-                onSelectBook={handleBookSelect}
-                onOpenReader={handleOpenReader}
-                onAction={handleAction}
+                onSelectBook={(bookId) => (selectedBookId = bookId)}
+                onOpenReader={openReaderTab}
+                onImport={importPdf}
             />
-        {:else}
-            <ReaderView
-                book={selectedBook}
-                marks={readerMarks}
-                onAction={handleAction}
-            />
+        {:else if selectedBook}
+            <ReaderView book={selectedBook} onPageChange={handlePageChange} />
         {/if}
     </section>
 
-    <PdfDetailsPanel
-        book={selectedBook}
-        notes={noteCards}
-        onAction={handleAction}
-        onOpenReader={handleOpenReader}
-        onAddTag={handleAddTag}
-        onRemoveTag={handleRemoveTag}
-        onSetProgress={handleSetProgress}
-        onSetStatus={handleSetStatus}
-    />
+    {#if selectedBook}
+        <PdfDetailsPanel
+            book={selectedBook}
+            onOpenReader={openReaderTab}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            onSetProgress={handleSetProgress}
+            onSetStatus={handleSetStatus}
+        />
+    {:else}
+        <aside class="pdf-inspector empty-inspector" aria-label="No PDF selected">
+            <strong>Your library is empty</strong>
+            <span>Import a PDF to get started.</span>
+            <button type="button" onclick={importPdf}>Import PDF</button>
+        </aside>
+    {/if}
 </main>

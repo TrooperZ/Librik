@@ -1,6 +1,6 @@
 :root {
-    color: #21262e;
-    background: #f5f7fa;
+    color: var(--text);
+    background: var(--bg);
     font-family:
         Inter,
         ui-sans-serif,
@@ -26,6 +26,33 @@
     --danger: #b42318;
     --ok: #0f8a5f;
     --chrome: #f8fafc;
+    --hover: #e8edf2;
+    --selected: #f6f9ff;
+    --reader-bg: #edf1f5;
+    --soft-overlay: rgba(33, 38, 46, 0.08);
+    --glass: rgba(255, 255, 255, 0.72);
+}
+
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #14181e;
+    --panel: #191e25;
+    --surface: #20262e;
+    --surface-muted: #252c35;
+    --line: #3a4450;
+    --line-soft: #2c3540;
+    --text: #edf1f6;
+    --muted: #9aa6b3;
+    --accent: #79a7ff;
+    --accent-soft: #1d3559;
+    --danger: #ff8f86;
+    --ok: #55d6a7;
+    --chrome: #171c22;
+    --hover: #29313b;
+    --selected: #20334e;
+    --reader-bg: #10151b;
+    --soft-overlay: rgba(255, 255, 255, 0.08);
+    --glass: rgba(255, 255, 255, 0.12);
 }
 
 * {
@@ -171,7 +198,7 @@ button {
     width: 40px;
     border-radius: 16px;
     color: var(--text);
-    background: #e8edf2;
+    background: var(--surface-muted);
     font-size: 13px;
     font-weight: 800;
 }
@@ -186,7 +213,7 @@ button {
     min-height: 0;
     padding: 6px 0;
     border-right: 1px solid var(--line);
-    background: #edf1f5;
+    background: var(--surface-muted);
 }
 
 .activity-group {
@@ -209,7 +236,7 @@ button {
 .activity-rail button:hover,
 .activity-rail button.active {
     color: var(--text);
-    background: #e6ebf1;
+    background: var(--hover);
 }
 
 .activity-rail button.active::before {
@@ -230,7 +257,7 @@ button {
     padding: 10px;
     overflow: auto;
     border-right: 1px solid var(--line);
-    background: #f8fafc;
+    background: var(--chrome);
 }
 
 .side-panel-header {
@@ -317,7 +344,7 @@ button {
 
 .library-panel-header button:hover,
 .icon-square:hover {
-    background: #e8edf3;
+    background: var(--hover);
     color: var(--text);
 }
 
@@ -352,11 +379,11 @@ button {
 }
 
 .tree-row:hover {
-    background: #eef2f7;
+    background: var(--hover);
 }
 
 .tree-row.active {
-    background: #dce8ff;
+    background: var(--accent-soft);
     color: var(--text);
     font-weight: 800;
 }
@@ -393,7 +420,7 @@ button {
 }
 
 .tree-disclosure[role="button"]:hover {
-    background: rgba(33, 38, 46, 0.08);
+    background: var(--soft-overlay);
     color: var(--text);
 }
 
@@ -468,7 +495,7 @@ button {
 }
 
 .editor-close:hover {
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--glass);
     color: var(--text);
 }
 
@@ -524,7 +551,7 @@ button {
 
 .tag-search-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 28px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     align-items: center;
     margin-bottom: 4px;
@@ -539,7 +566,7 @@ button {
 
 .tag-check-row {
     display: grid;
-    grid-template-columns: 16px minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     min-height: 29px;
@@ -549,13 +576,12 @@ button {
 }
 
 .tag-check-row:hover {
-    background: #eef2f7;
+    background: var(--hover);
 }
 
-.tag-check-row input {
-    width: 13px;
-    height: 13px;
-    accent-color: var(--accent);
+.tag-check-row.active {
+    background: var(--accent-soft);
+    color: var(--accent);
 }
 
 .tag-check-row span {
@@ -591,7 +617,7 @@ button {
 }
 
 .recent-file-row:hover {
-    background: #eef2f7;
+    background: var(--hover);
 }
 
 .recent-file-row span,
@@ -612,80 +638,36 @@ button {
     font-size: 11px;
 }
 
-.mock-modal-backdrop {
-    position: fixed;
-    inset: 46px 0 0;
-    z-index: 20;
-    display: grid;
-    place-items: center;
-    background: rgba(33, 38, 46, 0.18);
+.empty-filter {
+    margin: 10px 8px;
+    color: var(--muted);
+    font-size: 12px;
 }
 
-.mock-modal {
+.workspace-facts {
     display: grid;
-    gap: 12px;
-    width: min(340px, calc(100vw - 48px));
-    padding: 14px;
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    background: var(--surface);
-    box-shadow: 0 18px 50px rgba(33, 38, 46, 0.18);
+    gap: 10px;
+    margin: 12px 0 0;
 }
 
-.mock-modal header {
+.workspace-facts div {
     display: flex;
-    align-items: center;
     justify-content: space-between;
+    gap: 12px;
 }
 
-.mock-modal header strong {
-    font-size: 13px;
+.workspace-facts dt,
+.workspace-facts dd {
+    margin: 0;
+    font-size: 12px;
 }
 
-.mock-modal header button {
-    display: grid;
-    width: 26px;
-    height: 26px;
-    place-items: center;
-    border-radius: 4px;
-    background: transparent;
+.workspace-facts dt {
     color: var(--muted);
-    cursor: pointer;
 }
-
-.mock-modal header button:hover {
-    background: var(--surface-muted);
-    color: var(--text);
-}
-
-.modal-field {
-    display: grid;
-    gap: 6px;
-}
-
-.modal-field span {
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-}
-
-.modal-field input {
-    height: 32px;
-    min-width: 0;
-    padding: 0 9px;
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    background: var(--surface);
-    color: var(--text);
-    outline: 0;
-    font-size: 13px;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: end;
-    gap: 8px;
+.workspace-facts dd {
+    font-weight: 700;
+    text-align: right;
 }
 
 .modal-actions button {
@@ -701,7 +683,7 @@ button {
 }
 
 .modal-actions button:last-child {
-    border-color: #b8cdfb;
+    border-color: var(--accent);
     background: var(--accent-soft);
     color: var(--accent);
 }
@@ -783,7 +765,7 @@ button {
     gap: 0;
     padding: 0;
     border-bottom: 1px solid var(--line);
-    background: #edf1f5;
+    background: var(--surface-muted);
 }
 
 .tab-strip {
@@ -800,7 +782,7 @@ button {
     min-width: 116px;
     max-width: 238px;
     border-right: 1px solid var(--line);
-    background: #f2f5f8;
+    background: var(--surface-muted);
 }
 
 .tab-item[draggable="true"] {
@@ -888,7 +870,7 @@ button {
 .close-tab:hover,
 .new-tab:hover,
 .tab-item:hover {
-    background: #e6ebf1;
+    background: var(--hover);
 }
 
 .tab-item.active:hover {
@@ -978,6 +960,19 @@ button {
     background: var(--surface);
 }
 
+.library-empty {
+    display: grid;
+    place-content: center;
+    gap: 6px;
+    min-height: 180px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.library-empty strong {
+    color: var(--text);
+}
+
 .table-header,
 .book-row {
     display: grid;
@@ -1016,7 +1011,7 @@ button {
 
 .book-row:hover,
 .book-row.selected {
-    background: #f6f9ff;
+    background: var(--selected);
 }
 
 .book-row > span {
@@ -1062,7 +1057,7 @@ button {
     padding: 4px 8px;
     overflow: hidden;
     border-radius: 999px;
-    background: #edf1f5;
+    background: var(--surface-muted);
     color: var(--muted);
     font-size: 11px;
     font-style: normal;
@@ -1078,7 +1073,7 @@ button {
 
 .tag-cell em {
     border-radius: 4px;
-    background: #eef2f7;
+    background: var(--hover);
 }
 
 .progress-cell {
@@ -1097,7 +1092,7 @@ button {
     height: 4px;
     overflow: hidden;
     border-radius: 999px;
-    background: #e5e9ef;
+    background: var(--line);
 }
 
 .progress-cell i {
@@ -1136,6 +1131,10 @@ button {
     overflow: hidden;
 }
 
+.reader-view.real-reader {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .reader-rail,
 .pdf-inspector {
     min-height: 0;
@@ -1143,6 +1142,26 @@ button {
     border-right: 1px solid var(--line);
     background: var(--panel);
     padding: 12px;
+}
+
+.empty-inspector {
+    display: grid;
+    place-content: center;
+    gap: 8px;
+    text-align: center;
+}
+
+.empty-inspector span {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.empty-inspector button {
+    min-height: 32px;
+    border-radius: 5px;
+    background: var(--accent);
+    color: white;
+    cursor: pointer;
 }
 
 .chapter-list {
@@ -1193,7 +1212,91 @@ button {
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    background: #edf1f5;
+    background: var(--reader-bg);
+}
+
+.real-reader .reader-canvas {
+    grid-template-rows: 44px minmax(0, 1fr);
+}
+
+.reader-navigation {
+    justify-content: space-between;
+}
+
+.reader-navigation > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reader-navigation > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.reader-toolstrip button:disabled {
+    cursor: default;
+    opacity: 0.45;
+}
+
+.pdf-scroll {
+    display: grid;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+    overflow: auto;
+    align-items: start;
+    justify-items: center;
+}
+
+.pdf-pages {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    min-width: min-content;
+}
+
+.pdf-pages.hidden {
+    display: none;
+}
+
+.page-layout-control {
+    display: inline-flex;
+    gap: 2px;
+    padding-right: 6px;
+    border-right: 1px solid var(--line);
+}
+
+.page-layout-control button {
+    min-width: 34px;
+    justify-content: center;
+    gap: 4px;
+}
+
+.pdf-canvas {
+    display: block;
+    background: white;
+    box-shadow: 0 8px 28px rgba(33, 38, 46, 0.16);
+}
+
+.reader-status,
+.reader-error {
+    align-self: center;
+    max-width: 560px;
+    margin: 0;
+    padding: 18px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.reader-error {
+    color: var(--danger);
 }
 
 .reader-toolstrip {
@@ -1343,7 +1446,7 @@ input:focus-visible {
     grid-row: 2 / 3;
     border-right: 0;
     border-left: 1px solid var(--line);
-    background: #fbfcfe;
+    background: var(--panel);
 }
 
 .inspector-header {
@@ -1419,7 +1522,7 @@ input:focus-visible {
     width: 34px;
     height: 4px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.72);
+    background: var(--glass);
 }
 
 .preview-cover strong {
@@ -1444,7 +1547,7 @@ input:focus-visible {
     display: block;
     height: 5px;
     border-radius: 999px;
-    background: #d8dee7;
+    background: var(--line);
 }
 
 .preview-line.wide {
@@ -1463,7 +1566,7 @@ input:focus-visible {
 
 .inspector-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 4px;
     padding: 10px 0;
 }
@@ -1516,7 +1619,7 @@ input:focus-visible {
 .metadata-grid dt,
 .metadata-row span,
 .path-field span,
-.mock-control-group h3 {
+.control-group h3 {
     margin: 0 0 4px;
     color: var(--muted);
     font-size: 10px;
@@ -1605,7 +1708,7 @@ input:focus-visible {
     font-weight: 700;
 }
 
-.mock-control-group {
+.control-group {
     display: grid;
     gap: 6px;
 }
@@ -1616,7 +1719,7 @@ input:focus-visible {
 }
 
 .segmented-row button.active {
-    border-color: #b8cdfb;
+    border-color: var(--accent);
     background: var(--accent-soft);
     color: var(--accent);
 }

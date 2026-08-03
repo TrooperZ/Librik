@@ -10,8 +10,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.0.0",
     "@lucide/svelte": "^1.18.0",
+    "@tauri-apps/api": "^2.0.0",
+    "pdfjs-dist": "^6.2.108",
     "svelte": "^5.56.3"
   },
   "devDependencies": {

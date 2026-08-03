@@ -13,22 +13,6 @@ export type WorkspaceTab =
       closable: true;
     };
 
-export type IconComponent = typeof import('@lucide/svelte').Icon;
-
-export type AppAction =
-  | 'Import PDF'
-  | 'Sync'
-  | 'Settings'
-  | 'Profile'
-  | 'List view'
-  | 'Shelf view'
-  | 'Filter'
-  | 'Sort'
-  | 'Open reader'
-  | 'Reader tool'
-  | 'Export notes'
-  | 'Copy citation';
-
 export type BookRow = {
   id: string;
   title: string;
@@ -47,14 +31,4 @@ export type BookRow = {
   fingerprint: string;
   currentPage: number;
   accent: string;
-};
-
-export type ReaderMark = {
-  title: string;
-  body: string;
-};
-
-export type NoteCard = {
-  title: string;
-  body: string;
 };
