@@ -13,6 +13,7 @@
     type ActivityView = import("./ActivityRail.svelte").ActivityView;
 
     export let activeView: ActivityView;
+    export let panelOpen: boolean;
     export let onSelect: (view: ActivityView) => void;
 
     const primaryItems: Array<{
@@ -32,10 +33,10 @@
         {#each primaryItems as item}
             <button
                 type="button"
-                class:active={activeView === item.id}
-                title={item.label}
+                class:active={panelOpen && activeView === item.id}
+                title={panelOpen && activeView === item.id ? `Hide ${item.label}` : `Show ${item.label}`}
                 aria-label={item.label}
-                aria-pressed={activeView === item.id}
+                aria-pressed={panelOpen && activeView === item.id}
                 onclick={() => onSelect(item.id)}
             >
                 <item.icon size={20} strokeWidth={1.8} />
@@ -45,10 +46,10 @@
 
     <button
         type="button"
-        class:active={activeView === "settings"}
-        title="Settings"
+        class:active={panelOpen && activeView === "settings"}
+        title={panelOpen && activeView === "settings" ? "Hide Settings" : "Show Settings"}
         aria-label="Settings"
-        aria-pressed={activeView === "settings"}
+        aria-pressed={panelOpen && activeView === "settings"}
         onclick={() => onSelect("settings")}
     >
         <Settings size={20} strokeWidth={1.8} />

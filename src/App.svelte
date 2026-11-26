@@ -1,5 +1,6 @@
 <script lang="ts">
     import { invoke, isTauri } from "@tauri-apps/api/core";
+    import { ChevronLeft, ChevronRight } from "@lucide/svelte";
     import { onMount } from "svelte";
     import ActivityRail from "./components/ActivityRail.svelte";
     import type { ActivityView } from "./components/ActivityRail.svelte";
@@ -25,9 +26,10 @@
         { id: "library", kind: "library", title: "Library", closable: false },
     ];
     let activeTabId = "library";
+    let leftPanelOpen = true;
+    let rightPanelOpen = true;
 
     $: selectedBook = books.find((book) => book.id === selectedBookId) ?? books[0];
-    $: activeTab = workspaceTabs.find((tab) => tab.id === activeTabId) ?? workspaceTabs[0];
     $: normalizedQuery = searchQuery.trim().toLowerCase();
     $: filteredBooks = books.filter((book) => {
         const matchesSearch =
@@ -119,16 +121,19 @@
         }
         selectedBookId = bookId;
         activeTabId = tabId;
+        rightPanelOpen = false;
     }
 
     function showLibrary() {
         activeTabId = "library";
+        rightPanelOpen = true;
     }
 
     function handleSelectTab(tabId: string) {
         const tab = workspaceTabs.find((item) => item.id === tabId);
         if (!tab) return;
         activeTabId = tab.id;
+        rightPanelOpen = tabId === "library";
         if (tab.kind === "reader") selectedBookId = tab.bookId;
     }
 
@@ -141,6 +146,7 @@
         if (activeTabId !== tabId) return;
         const nextTab = nextTabs[Math.max(0, tabIndex - 1)] ?? nextTabs[0];
         activeTabId = nextTab.id;
+        rightPanelOpen = nextTab.id === "library";
         if (nextTab.kind === "reader") selectedBookId = nextTab.bookId;
     }
 
@@ -157,8 +163,12 @@
     }
 
     function handleActivitySelect(view: ActivityView) {
+        if (activeActivity === view) {
+            leftPanelOpen = !leftPanelOpen;
+            return;
+        }
         activeActivity = view;
-        showLibrary();
+        leftPanelOpen = true;
     }
 
     function handleFilter(filter: string) {
@@ -354,26 +364,28 @@
         onSettings={() => handleActivitySelect("settings")}
         onToggleTheme={toggleTheme}
     />
-    <ActivityRail activeView={activeActivity} onSelect={handleActivitySelect} />
-    <SourceSidebar
-        {books}
-        {folders}
-        {activeActivity}
-        {selectedFilter}
-        {selectedTag}
-        {selectedFolder}
-        {searchQuery}
-        onFilter={handleFilter}
-        onSearch={handleSearch}
-        onTag={handleTag}
-        onFolder={handleFolder}
-        onCreateFolder={createFolder}
-        onRenameFolder={renameFolder}
-        onMoveFolder={moveFolder}
-        onDeleteFolder={deleteFolder}
-        onSetFolderColor={setFolderColor}
-        onOpenBook={openReaderTab}
-    />
+    <ActivityRail activeView={activeActivity} panelOpen={leftPanelOpen} onSelect={handleActivitySelect} />
+    {#if leftPanelOpen}
+        <SourceSidebar
+            {books}
+            {folders}
+            {activeActivity}
+            {selectedFilter}
+            {selectedTag}
+            {selectedFolder}
+            {searchQuery}
+            onFilter={handleFilter}
+            onSearch={handleSearch}
+            onTag={handleTag}
+            onFolder={handleFolder}
+            onCreateFolder={createFolder}
+            onRenameFolder={renameFolder}
+            onMoveFolder={moveFolder}
+            onDeleteFolder={deleteFolder}
+            onSetFolderColor={setFolderColor}
+            onOpenBook={openReaderTab}
+        />
+    {/if}
 
     <section class="workspace" aria-label="Primary workspace">
         <WorkspaceTabs
@@ -384,36 +396,58 @@
             onNew={importPdf}
             onReorder={handleReorderTabs}
         />
-        {#if activeTab.kind === "library"}
-            <LibraryView
-                title={libraryTitle}
-                books={filteredBooks}
-                {selectedBookId}
-                onSelectBook={(bookId) => (selectedBookId = bookId)}
-                onOpenReader={openReaderTab}
-                onImport={importPdf}
-            />
-        {:else if selectedBook}
-            <ReaderView book={selectedBook} onPageChange={handlePageChange} />
-        {/if}
+        {#each workspaceTabs as tab (tab.id)}
+            {#if tab.kind === "library"}
+                <div class="workspace-pane" hidden={activeTabId !== tab.id}>
+                    <LibraryView
+                        title={libraryTitle}
+                        books={filteredBooks}
+                        {selectedBookId}
+                        onSelectBook={(bookId) => (selectedBookId = bookId)}
+                        onOpenReader={openReaderTab}
+                        onImport={importPdf}
+                    />
+                </div>
+            {:else}
+                {@const tabBook = books.find((book) => book.id === tab.bookId)}
+                {#if tabBook}
+                    <div class="workspace-pane" hidden={activeTabId !== tab.id}>
+                        <ReaderView book={tabBook} onPageChange={handlePageChange} />
+                    </div>
+                {/if}
+            {/if}
+        {/each}
     </section>
 
-    {#if selectedBook}
-        <PdfDetailsPanel
-            book={selectedBook}
-            {folders}
-            onOpenReader={openReaderTab}
-            onAddTag={handleAddTag}
-            onRemoveTag={handleRemoveTag}
-            onSetProgress={handleSetProgress}
-            onSetStatus={handleSetStatus}
-            onSetFolder={handleSetFolder}
-        />
+    {#if rightPanelOpen}
+        <div class="inspector-dock open">
+            <button class="inspector-toggle" type="button" title="Hide details" aria-label="Hide details" aria-expanded="true" onclick={() => (rightPanelOpen = false)}>
+                <ChevronRight size={16} strokeWidth={2} />
+            </button>
+            {#if selectedBook}
+                <PdfDetailsPanel
+                    book={selectedBook}
+                    {folders}
+                    onOpenReader={openReaderTab}
+                    onAddTag={handleAddTag}
+                    onRemoveTag={handleRemoveTag}
+                    onSetProgress={handleSetProgress}
+                    onSetStatus={handleSetStatus}
+                    onSetFolder={handleSetFolder}
+                />
+            {:else}
+                <aside class="pdf-inspector empty-inspector" aria-label="No PDF selected">
+                    <strong>Your library is empty</strong>
+                    <span>Import a PDF to get started.</span>
+                    <button type="button" onclick={importPdf}>Import PDF</button>
+                </aside>
+            {/if}
+        </div>
     {:else}
-        <aside class="pdf-inspector empty-inspector" aria-label="No PDF selected">
-            <strong>Your library is empty</strong>
-            <span>Import a PDF to get started.</span>
-            <button type="button" onclick={importPdf}>Import PDF</button>
-        </aside>
+        <div class="inspector-dock collapsed">
+            <button class="inspector-toggle" type="button" title="Show details" aria-label="Show details" aria-expanded="false" onclick={() => (rightPanelOpen = true)}>
+                <ChevronLeft size={16} strokeWidth={2} />
+            </button>
+        </div>
     {/if}
 </main>
